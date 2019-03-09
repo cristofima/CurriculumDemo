@@ -2,24 +2,25 @@ package com.coronado.cv.controller;
 
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.coronado.cv.exception.ConflictException;
+import com.coronado.cv.exception.ServerException;
 import com.coronado.cv.model.Role;
 import com.coronado.cv.model.User;
 import com.coronado.cv.payload.request.LoginForm;
@@ -29,7 +30,6 @@ import com.coronado.cv.repository.RoleRepository;
 import com.coronado.cv.repository.UserRepository;
 import com.coronado.cv.security.jwt.JwtProvider;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -61,15 +61,15 @@ public class AuthController {
 	}
 
 	@PostMapping("/signup")
-	public ResponseEntity<String> registerUser(@Valid @RequestBody SignUpForm signUpRequest) {
+	public ResponseEntity<Object> registerUser(@Valid @RequestBody SignUpForm signUpRequest) {
 		if (userRepository.existsByUsername(signUpRequest.getUsername())) {
-			return new ResponseEntity<String>("Fail -> Username is already taken!", HttpStatus.BAD_REQUEST);
+			throw new ConflictException("Username " + signUpRequest.getUsername() + " is already taken!");
 		}
 
 		if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-			return new ResponseEntity<String>("Fail -> Email is already in use!", HttpStatus.BAD_REQUEST);
+			throw new ConflictException("Email " + signUpRequest.getEmail() + " is already in use!");
 		}
-		
+
 		Date today = new Date();
 		// Creating user's account
 		User user = new User(signUpRequest.getUsername(), signUpRequest.getEmail(),
@@ -77,13 +77,16 @@ public class AuthController {
 
 		Set<Role> roles = new HashSet<>();
 
-		Role userRole = roleRepository.findByName("ROLE_USER")
-				.orElseThrow(() -> new RuntimeException("Fail! -> Cause: User Role not find."));
-		roles.add(userRole);
+		Optional<Role> userRole = roleRepository.findByName("ROLE_USER");
+		if (!userRole.isPresent()) {
+			throw new ServerException("Cause: User Role not find.");
+		}
+
+		roles.add(userRole.get());
 
 		user.setRoles(roles);
 		userRepository.save(user);
 
-		return ResponseEntity.ok().body("User registered successfully!");
+		return ResponseEntity.ok().build();
 	}
 }

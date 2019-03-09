@@ -52,7 +52,7 @@ public class SpringSecurityConfig extends WebSecurityConfigurerAdapter {
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		http.cors().disable().csrf().disable().authorizeRequests().antMatchers("/api/auth/**").permitAll()
+		http.csrf().disable().authorizeRequests().antMatchers("/api/auth/**").permitAll()
 				.antMatchers("/api/capacitaciones").hasRole("USER").anyRequest().authenticated().and()
 				.exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and().sessionManagement()
 				.sessionCreationPolicy(SessionCreationPolicy.STATELESS);

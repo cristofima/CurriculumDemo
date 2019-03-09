@@ -49,18 +49,7 @@ public class JwtProvider {
 	public String getUserNameFromJwtToken(String token) {
 		return Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(token).getBody().getSubject();
 	}
-
-	private String revokeJwtToken(HttpServletRequest request) {
-
-		String authHeader = request.getHeader("Authorization");
-
-		if (authHeader != null && authHeader.startsWith("Bearer ")) {
-			return authHeader.replace("Bearer ", "");
-		}
-
-		return null;
-	}
-
+	
 	public boolean validateJwtToken(String authToken) {
 		try {
 			Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(authToken);
